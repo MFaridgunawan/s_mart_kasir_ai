@@ -92,7 +92,7 @@ init_db()
 
 # LOAD AI
 try:
-    model = load_model('best_checkout_model.h5')
+    model = load_model('model/best_checkout_model.h5')
     print("✅ AI Model Loaded!")
 except:
     print("❌ Warning: Model AI tidak ditemukan.")
