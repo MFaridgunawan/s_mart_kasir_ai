@@ -2,226 +2,123 @@
 <html lang="id">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <title>AI Scanner</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>AI Vision Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
-        /* --- BASE STYLE --- */
-        body { 
-            background-color: #000; 
-            color: white; 
-            font-family: 'Segoe UI', Roboto, sans-serif; 
-            overflow: hidden; 
-            margin: 0;
+        /* Animasi Laser Ungu-Hijau */
+        @keyframes scan-laser {
+            0% { top: 0%; opacity: 0; box-shadow: 0 0 10px #8b5cf6; background: #8b5cf6; }
+            50% { opacity: 1; box-shadow: 0 0 20px #00ff88; background: #00ff88; }
+            100% { top: 100%; opacity: 0; box-shadow: 0 0 10px #8b5cf6; background: #8b5cf6; }
+        }
+        .laser-beam {
+            position: absolute; width: 100%; height: 3px;
+            animation: scan-laser 2s infinite ease-in-out;
         }
 
-        /* --- KAMERA BACKGROUND --- */
-        #video { 
-            position: fixed; top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            object-fit: cover; 
-            z-index: 1; 
-            filter: brightness(1.1); /* Sedikit diterangkan */
-        }
-        
-        /* --- HEADER TRANSPARAN --- */
-        .header-overlay {
-            position: fixed; top: 0; left: 0; width: 100%;
-            padding: 20px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-            z-index: 10;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .brand-badge {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(5px);
-            padding: 5px 15px;
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.2);
-            font-size: 14px;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-
-        /* --- VIEWFINDER (KOTAK FOKUS) --- */
-        .scan-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5;
-            display: flex; justify-content: center; align-items: center;
-        }
-        .scan-box {
-            width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
-            position: relative;
-        }
-        /* Sudut-sudut Kotak */
-        .scan-corner {
-            position: absolute; width: 30px; height: 30px;
-            border-color: #00ff88; border-style: solid;
-            transition: all 0.3s ease;
-        }
-        .tl { top: 0; left: 0; border-width: 4px 0 0 4px; border-radius: 10px 0 0 0; }
-        .tr { top: 0; right: 0; border-width: 4px 4px 0 0; border-radius: 0 10px 0 0; }
-        .bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-radius: 0 0 0 10px; }
-        .br { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-radius: 0 0 10px 0; }
-
-        /* Efek Laser Scan */
-        .laser {
-            position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-            background: #00ff88;
-            box-shadow: 0 0 15px #00ff88, 0 0 30px #00ff88;
-            animation: scanAnim 2s infinite ease-in-out;
-            display: none; opacity: 0.8;
-        }
-        @keyframes scanAnim { 0% {top: 5%; opacity: 0;} 50% {opacity: 1;} 100% {top: 95%; opacity: 0;} }
-
-        /* --- PANEL KONTROL BAWAH (GLASSMORPHISM) --- */
-        .control-panel {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            height: 180px;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(15px);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            border-radius: 30px 30px 0 0;
-            z-index: 20;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            padding-bottom: 20px;
-        }
-
-        /* Status Teks */
-        #status-text {
-            color: rgba(255,255,255,0.8);
-            margin-bottom: 20px;
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        /* Tombol Shutter Mewah */
-        .shutter-btn {
-            width: 80px; height: 80px;
+        /* Animasi Loading Berputar di Tombol */
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-ring {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #8b5cf6;
             border-radius: 50%;
-            border: 4px solid rgba(255, 255, 255, 0.8);
-            padding: 4px;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        .shutter-inner {
             width: 100%; height: 100%;
-            background-color: white;
-            border-radius: 50%;
-            transition: all 0.3s;
-        }
-        
-        /* Efek saat Scanning (Tombol jadi Merah Kotak) */
-        .is-scanning .shutter-btn { border-color: #ff4d4d; }
-        .is-scanning .shutter-inner {
-            background-color: #ff4d4d;
-            border-radius: 10px; /* Jadi kotak tumpul */
-            transform: scale(0.6);
+            animation: spin 1s linear infinite;
         }
 
-        /* --- CUSTOM SWEETALERT (DARK MODE) --- */
-        .swal2-popup.swal-dark {
-            background: rgba(30, 30, 30, 0.95) !important;
-            backdrop-filter: blur(10px);
-            border: 1px solid #444;
-            border-radius: 20px;
+        /* Efek Tombol Ditekan */
+        .shutter-btn:active { transform: scale(0.95); }
+        .shutter-inner { transition: all 0.3s; }
+        
+        /* Custom SweetAlert Style */
+        div:where(.swal2-container) div:where(.swal2-popup) {
+            padding: 0 !important; /* Hapus padding bawaan biar rapi */
+            overflow: hidden;
         }
-        .swal2-title { color: white !important; }
-        .swal2-html-container { color: #bbb !important; }
-        .swal2-timer-progress-bar { background: #00ff88 !important; }
     </style>
 </head>
-<body>
+<body class="bg-black h-screen w-screen overflow-hidden flex flex-col">
 
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas" style="display:none;"></canvas>
+    <video id="video" autoplay playsinline muted class="absolute top-0 left-0 w-full h-full object-cover z-0"></video>
+    <canvas id="canvas" class="hidden"></canvas>
 
-    <div class="header-overlay">
-        <div class="brand-badge"><i class="bi bi-robot"></i> S-Mart</div>
-        <button onclick="window.location.reload()" class="btn btn-sm btn-dark rounded-circle"><i class="bi bi-arrow-clockwise"></i></button>
-    </div>
-
-    <div class="scan-overlay">
-        <div class="scan-box" id="scanBox">
-            <div class="scan-corner tl"></div>
-            <div class="scan-corner tr"></div>
-            <div class="scan-corner bl"></div>
-            <div class="scan-corner br"></div>
-            <div class="laser" id="laser"></div>
-        </div>
-    </div>
-
-    <div class="control-panel" id="controlPanel">
-        <div id="status-text">Ketuk untuk Scan</div>
+    <div class="relative z-10 flex flex-col h-full justify-between pointer-events-none">
         
-        <div class="shutter-btn" onclick="toggleScan()">
-            <div class="shutter-inner"></div>
+        <div class="p-6 pt-8 bg-gradient-to-b from-black/90 via-black/50 to-transparent flex justify-between items-center pointer-events-auto">
+            <div class="px-4 py-1.5 rounded-full border border-indigo-500/50 bg-indigo-900/30 backdrop-blur-md text-indigo-300 text-xs font-bold tracking-widest flex items-center gap-2 shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                </span>
+                S-Mart VISION 
+            </div>
+            
+            <button onclick="window.location.reload()" class="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/20 backdrop-blur-md active:bg-white/20 transition">
+                <i class="bi bi-arrow-clockwise text-lg"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center justify-center relative">
+            <div id="scanBox" class="w-72 h-72 relative border border-white/20 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(139,92,246,0.2)] transition-all duration-300">
+                <div class="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-indigo-500 rounded-tl-2xl"></div>
+                <div class="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-indigo-500 rounded-tr-2xl"></div>
+                <div class="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-emerald-400 rounded-bl-2xl"></div>
+                <div class="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-emerald-400 rounded-br-2xl"></div>
+                
+                <div class="laser-beam"></div>
+            </div>
+            
+            <p class="mt-8 text-white/80 font-medium text-sm bg-black/40 px-5 py-2 rounded-full backdrop-blur-sm border border-white/10 shadow-lg">
+                Arahkan ke produk & Tekan tombol
+            </p>
+        </div>
+
+        <div class="pb-16 pt-10 flex justify-center items-center bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-auto">
+            <button id="shutterBtn" onclick="manualCapture()" class="shutter-btn w-20 h-20 rounded-full border-[3px] border-white/80 p-1 flex items-center justify-center shadow-2xl shadow-indigo-500/30 transition-all bg-white/5 backdrop-blur-sm">
+                <div id="shutterInner" class="shutter-inner w-16 h-16 bg-white rounded-full shadow-inner relative overflow-hidden"></div>
+                <div id="loadingSpinner" class="absolute w-20 h-20 p-1 hidden">
+                    <div class="loading-ring"></div>
+                </div>
+            </button>
         </div>
     </div>
 
 <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const controlPanel = document.getElementById('controlPanel');
-    const laser = document.getElementById('laser');
-    const statusText = document.getElementById('status-text');
+    const shutterBtn = document.getElementById('shutterBtn');
+    const shutterInner = document.getElementById('shutterInner');
+    const loadingSpinner = document.getElementById('loadingSpinner');
     
-    let isScanning = false;
-    let scanInterval = null;
+    let isProcessing = false; 
 
-    // 1. Setup Kamera
-    const constraints = { video: { facingMode: "environment", width: { ideal: 640 } } };
+    // Setup Kamera
+    const constraints = { 
+        video: { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } 
+    };
     
     navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => { video.srcObject = stream; })
-        .catch(err => { statusText.innerText = "Izin kamera ditolak!"; });
+        .catch(err => {
+            navigator.mediaDevices.getUserMedia({ video: true }).then(stream => { video.srcObject = stream; });
+        });
 
-    // 2. Toggle Scan
-    function toggleScan() {
-        if(isScanning) {
-            stopScan();
-        } else {
-            startScan();
-        }
-    }
-
-    function startScan() {
-        isScanning = true;
-        controlPanel.classList.add("is-scanning"); // Ubah tombol jadi merah
-        laser.style.display = "block"; // Nyalakan laser
-        statusText.innerText = "Mencari produk...";
-        statusText.style.color = "#00ff88";
-
-        // Burst Mode: Kirim gambar setiap 400ms
-        scanInterval = setInterval(captureAndSend, 400);
-    }
-
-    function stopScan() {
-        isScanning = false;
-        controlPanel.classList.remove("is-scanning");
-        laser.style.display = "none";
-        statusText.innerText = "Ketuk untuk Scan";
-        statusText.style.color = "rgba(255,255,255,0.8)";
-        clearInterval(scanInterval);
-    }
-
-    function captureAndSend() {
+    function manualCapture() {
+        if (isProcessing) return; 
         if (!video.videoWidth) return;
 
-        const context = canvas.getContext('2d');
-        const size = 300; // Ukuran optimal
-        canvas.width = size;
-        canvas.height = size;
+        isProcessing = true;
+        shutterBtn.disabled = true; 
+        shutterInner.classList.add('scale-75', 'bg-indigo-500'); 
+        loadingSpinner.classList.remove('hidden'); 
 
-        // Crop Tengah (Center Crop)
-        const minSize = Math.min(video.videoWidth, video.videoHeight);
-        const startX = (video.videoWidth - minSize) / 2;
-        const startY = (video.videoHeight - minSize) / 2;
-        
-        context.drawImage(video, startX, startY, minSize, minSize, 0, 0, size, size);
+        const context = canvas.getContext('2d');
+        const size = 300; canvas.width = size; canvas.height = size;
+        const min = Math.min(video.videoWidth, video.videoHeight);
+        context.drawImage(video, (video.videoWidth-min)/2, (video.videoHeight-min)/2, min, min, 0, 0, size, size);
 
         canvas.toBlob(blob => {
             const formData = new FormData();
@@ -231,30 +128,57 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    stopScan(); // Berhenti scanning
-                    showDarkPopup(data.product, data.price); // Tampilkan Popup Gelap
+                    showDarkPopup(data.product, data.price);
+                } else {
+                    if(navigator.vibrate) navigator.vibrate(200);
+                    Swal.fire({
+                        icon: 'error', 
+                        title: 'Tidak Dikenali',
+                        toast: true, position: 'top', showConfirmButton: false, timer: 1500,
+                        background: '#ef4444', color: 'white',
+                        customClass: { popup: 'rounded-full px-6 mt-16 shadow-lg' }
+                    });
                 }
             })
-            .catch(err => console.log("Skip frame..."));
+            .catch(err => {
+                Swal.fire({icon: 'error', title: 'Error Koneksi', toast: true, position: 'top', timer: 2000});
+            })
+            .finally(() => {
+                setTimeout(() => {
+                    isProcessing = false;
+                    shutterBtn.disabled = false;
+                    shutterInner.classList.remove('scale-75', 'bg-indigo-500');
+                    loadingSpinner.classList.add('hidden');
+                }, 1000); 
+            });
 
-        }, 'image/jpeg', 0.6);
+        }, 'image/jpeg', 0.7);
     }
 
-    // --- 3. CUSTOM POPUP GELAP (PENTING!) ---
     function showDarkPopup(product, price) {
         Swal.fire({
-            title: product,
-            html: `<h3 style="color: #00ff88; font-weight:bold;">Rp ${price.toLocaleString()}</h3>
-                   <p style="font-size:0.9em; color:#aaa;">Berhasil ditambahkan</p>`,
-            icon: 'success',
-            iconColor: '#00ff88',
-            background: '#1a1a1a', // Background Popup Gelap
+            // HAPUS icon: 'success' BAWAAN AGAR TIDAK DOUBLE
+            html: `
+                <div class="flex flex-col items-center justify-center pt-4 pb-2">
+                    <div class="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mb-4 shadow-[0_0_20px_#10b981]">
+                        <i class="bi bi-check-lg text-3xl text-emerald-400"></i>
+                    </div>
+                    
+                    <h2 class="text-white text-2xl font-bold tracking-wide mb-1">${product}</h2>
+                    
+                    <p class="text-emerald-400 text-xl font-mono font-bold">Rp ${price.toLocaleString('id-ID')}</p>
+                    
+                    <p class="text-gray-400 text-xs mt-3">Berhasil masuk keranjang</p>
+                </div>
+            `,
+            background: 'rgba(20, 20, 25, 0.95)', // Gelap pekat transparan
             timer: 2000,
             showConfirmButton: false,
-            customClass: {
-                popup: 'swal-dark' // Class CSS tambahan
-            },
-            backdrop: `rgba(0,0,0,0.4)` // Gelapkan background belakang popup
+            backdrop: `rgba(0,0,0,0.6)`,
+            width: '85%', // Rasio lebar agar pas di HP
+            customClass: { 
+                popup: 'rounded-3xl border border-indigo-500/30 shadow-[0_0_50px_rgba(139,92,246,0.2)]' 
+            }
         });
     }
 </script>

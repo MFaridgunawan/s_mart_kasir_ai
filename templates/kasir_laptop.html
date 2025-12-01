@@ -3,25 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Checkout</title>
+    <title>Smart Checkout Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
         .new-item { animation: flash 0.8s ease-out; }
         @keyframes flash { 0% { background-color: #d1fae5; } 100% { background-color: transparent; } }
-        
-        /* Scrollbar Halus */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
-
-        /* Animasi Tombol Shutter */
-        .shutter-btn:active { transform: scale(0.9); }
-        .shutter-inner { transition: all 0.2s; }
-        .shutter-btn:active .shutter-inner { background-color: #ef4444; transform: scale(0.8); }
     </style>
 </head>
 <body class="bg-gray-50 font-sans h-screen flex flex-col overflow-hidden">
@@ -37,74 +31,81 @@
             </div>
             
             <div class="flex gap-3">
-                <span class="bg-indigo-500/50 border border-indigo-400 text-indigo-100 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 cursor-default">
-                    <i class="bi bi-person-badge"></i> KASIR
-                </span>
+                {% if user.role == 'admin' %}
+                    <a href="/history" class="bg-white/10 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition text-sm flex items-center gap-2">
+                        <i class="bi bi-arrow-left"></i> Panel Admin
+                    </a>
+                {% else %}
+                    <span class="bg-indigo-500/50 border border-indigo-400 text-indigo-100 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
+                        <i class="bi bi-person-badge"></i> KASIR: {{ user.username.upper() }}
+                    </span>
+                {% endif %}
             </div>
         </div>
     </div>
 </nav>
 
-<div class="flex-1 w-full overflow-y-auto p-4 sm:p-6 lg:p-8">
-    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+<div class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full overflow-hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
         
-        <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden min-h-[400px]">
-            <div class="p-4 sm:p-5 border-b border-gray-100 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shrink-0">
-    
-    <div class="flex items-center justify-between w-full sm:w-auto">
-        <div class="flex items-center gap-2">
-            <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <i class="bi bi-cart3 text-indigo-600"></i> Keranjang
-            </h2>
-            <span class="text-[10px] sm:text-xs font-bold px-2 py-1 bg-green-100 text-green-700 rounded animate-pulse">Live</span>
-        </div>
-    </div>
-    
-    <a href="/scan" target="_blank" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 sm:py-2.5 rounded-xl text-sm font-bold shadow-md transition flex items-center justify-center gap-2 transform active:scale-95">
-        <i class="bi bi-qr-code-scan"></i>
-        <span>SCAN BARANG</span>
-    </a>
+        <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+            <div class="p-5 border-b border-gray-100 bg-white flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="bi bi-cart3 text-indigo-600"></i> Keranjang
+                    </h2>
+                    <span class="text-xs font-bold px-2 py-1 bg-green-100 text-green-700 rounded animate-pulse">Realtime</span>
+                </div>
+                
+                <div class="flex gap-2">
+                    <a href="/scan" target="_blank" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2" title="Buka Scanner di Laptop ini">
+                        <i class="bi bi-upc-scan"></i> Scan Barang
+                    </a>
 
-</div>
+                    <button onclick="openConnectModal()" class="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md transition flex items-center gap-2 transform active:scale-95">
+                        <i class="bi bi-qr-code"></i> Connect HP
+                    </button>
+                </div>
+            </div>
             
-            <div class="flex-1 overflow-y-auto p-0 relative min-h-[300px]">
-                <table class="w-full min-w-[300px]">
+            <div class="flex-1 overflow-y-auto p-0 relative">
+                <table class="w-full">
                     <thead class="bg-gray-50 sticky top-0 z-10">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">#</th>
-                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Produk</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nama Produk</th>
                             <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Harga</th>
                         </tr>
                     </thead>
                     <tbody id="cart-body" class="divide-y divide-gray-50"></tbody>
                 </table>
 
-                <div id="empty-msg" class="absolute inset-0 flex flex-col items-center justify-center text-center bg-white p-4">
-                    <div class="relative inline-block mb-4">
-                        <i class="bi bi-box-seam text-indigo-200 text-6xl sm:text-7xl"></i>
+                <div id="empty-msg" class="absolute inset-0 flex flex-col items-center justify-center text-center bg-white">
+                    <div class="relative inline-block mb-6">
+                        <i class="bi bi-phone text-indigo-200 text-7xl"></i>
                         <div class="absolute -bottom-2 -right-2 bg-white rounded-full p-2 shadow-md">
-                            <i class="bi bi-camera-video-fill text-emerald-500 text-xl animate-pulse"></i>
+                            <i class="bi bi-wifi text-emerald-500 text-2xl animate-pulse"></i>
                         </div>
                     </div>
-                    <h3 class="text-gray-500 text-lg sm:text-xl font-bold mb-1">Siap Scan...</h3>
-                    <p class="text-gray-400 text-sm">Tekan tombol <b>SCAN BARANG</b> di atas.</p>
+                    <h3 class="text-gray-500 text-xl font-bold mb-2">Menunggu Scan dari HP...</h3>
+                    <p class="text-gray-400 text-sm">Klik tombol "Connect HP" untuk menghubungkan scanner.</p>
                 </div>
             </div>
         </div>
 
-        <div class="lg:col-span-1">
-            <div class="bg-gray-900 rounded-2xl shadow-xl p-6 sm:p-8 text-white relative overflow-hidden flex flex-col justify-center h-auto">
+        <div class="lg:col-span-1 flex flex-col h-full">
+            <div class="bg-gray-900 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden flex flex-col justify-center h-auto min-h-[400px]">
                 <div class="relative z-10">
-                    <p class="text-gray-400 text-xs uppercase font-bold tracking-wider mb-1">TOTAL TAGIHAN</p>
-                    <div class="flex items-baseline gap-1 mb-6">
-                        <span class="text-2xl sm:text-3xl font-bold text-gray-300">Rp</span>
-                        <span id="grand-total" class="text-5xl sm:text-6xl font-bold text-emerald-400 tracking-tighter">0</span>
+                    <p class="text-gray-400 text-xs uppercase font-bold tracking-wider mb-2">TOTAL TAGIHAN</p>
+                    <div class="flex items-baseline gap-1 mb-8">
+                        <span class="text-3xl font-bold text-gray-300">Rp</span>
+                        <span id="grand-total" class="text-6xl font-bold text-emerald-400 tracking-tighter">0</span>
                     </div>
-                    <div class="space-y-3">
-                        <button onclick="openPaymentModal()" id="btn-checkout" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-bold py-3 sm:py-4 px-6 rounded-xl shadow-lg transition transform active:scale-95 flex items-center justify-center gap-3">
+                    <div class="space-y-4">
+                        <button onclick="openPaymentModal()" id="btn-checkout" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-bold py-4 px-6 rounded-xl shadow-lg transition transform hover:-translate-y-1 flex items-center justify-center gap-3">
                             <i class="bi bi-wallet-fill text-xl"></i> <span>BAYAR SEKARANG</span>
                         </button>
-                        <button onclick="resetCart()" class="w-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white font-semibold py-3 px-6 rounded-xl transition flex items-center justify-center gap-2 border border-white/5 active:scale-95">
+                        <button onclick="resetCart()" class="w-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white font-semibold py-3 px-6 rounded-xl transition flex items-center justify-center gap-2 border border-white/5">
                             <i class="bi bi-trash"></i> <span>Batalkan</span>
                         </button>
                     </div>
@@ -114,59 +115,47 @@
     </div>
 </div>
 
-<div id="scannerModal" class="hidden fixed inset-0 z-[60] bg-black flex flex-col">
-    <div class="relative flex-1 bg-black overflow-hidden">
-        <video id="video" autoplay playsinline muted class="absolute w-full h-full object-cover"></video>
-        <canvas id="canvas" class="hidden"></canvas>
+<div id="connectModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full text-center p-8 relative">
+        <button onclick="closeConnectModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
         
-        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <div class="w-72 h-72 border-2 border-white/50 rounded-3xl relative overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)]">
-                <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl"></div>
-                <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl"></div>
-                <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl"></div>
-                <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-400 rounded-br-xl"></div>
-            </div>
-            
-            <p class="mt-8 text-white/90 font-bold text-lg bg-black/60 px-6 py-2 rounded-full backdrop-blur-md border border-white/10 shadow-lg">
-                Arahkan ke Barang
-            </p>
-        </div>
-
-        <button onclick="closeScanner()" class="absolute top-6 right-6 z-50 w-12 h-12 bg-black/40 backdrop-blur-md rounded-full text-white flex items-center justify-center border border-white/20 active:bg-white/20 transition">
-            <i class="bi bi-x-lg text-xl"></i>
-        </button>
-
-        <div class="absolute bottom-0 w-full p-10 flex justify-center bg-gradient-to-t from-black via-black/80 to-transparent">
-            <button onclick="manualCapture()" class="shutter-btn w-24 h-24 rounded-full border-4 border-white flex items-center justify-center shadow-2xl shadow-black/50 pointer-events-auto bg-white/10 backdrop-blur-sm">
-                <div class="shutter-inner w-20 h-20 bg-white rounded-full shadow-inner"></div>
-            </button>
+        <h3 class="text-2xl font-bold text-gray-800 mb-2">Scan untuk Connect</h3>
+        <p class="text-gray-500 text-sm mb-6">Scan QR Code ini menggunakan kamera HP untuk membuka Scanner.</p>
+        
+        <div id="qrcode" class="flex justify-center mb-6"></div>
+        
+        <div id="ngrok-status" class="text-xs font-mono bg-gray-100 p-2 rounded text-gray-600 break-all">
+            Memuat link...
         </div>
     </div>
 </div>
 
-<div id="payModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
-    <div class="bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-t-3xl overflow-hidden shadow-2xl animate-slide-up">
+<div id="payModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
         <div class="bg-gray-900 text-white p-5 flex justify-between items-center">
             <h3 class="text-lg font-bold flex items-center gap-2"><i class="bi bi-cash-coin text-emerald-400"></i> Pilih Pembayaran</h3>
             <button onclick="closePayModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
         </div>
-        <div class="p-0 flex flex-col md:flex-row h-auto md:h-[400px]">
-            <div class="md:w-1/3 bg-gray-50 border-b md:border-b-0 md:border-r border-gray-100 p-4 sm:p-5 flex flex-row md:flex-col gap-2 overflow-x-auto">
-                <button onclick="switchPayTab('tunai')" id="tab-btn-tunai" class="flex-1 md:flex-none w-full text-left px-4 py-3 rounded-xl font-bold bg-indigo-600 text-white shadow-md flex items-center justify-center md:justify-start gap-2 transition-all text-sm sm:text-base"><i class="bi bi-cash-stack"></i> TUNAI</button>
-                <button onclick="switchPayTab('qris')" id="tab-btn-qris" class="flex-1 md:flex-none w-full text-left px-4 py-3 rounded-xl font-bold bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 flex items-center justify-center md:justify-start gap-2 transition-all text-sm sm:text-base"><i class="bi bi-qr-code"></i> QRIS</button>
+        <div class="p-0 flex flex-col md:flex-row h-[400px]">
+            <div class="md:w-1/3 bg-gray-50 border-r border-gray-100 p-5">
+                <p class="text-xs font-bold text-gray-400 uppercase mb-4">Metode</p>
+                <div class="space-y-3">
+                    <button onclick="switchPayTab('tunai')" id="tab-btn-tunai" class="w-full text-left px-4 py-3 rounded-xl font-bold bg-indigo-600 text-white shadow-md flex items-center gap-3 transition-all"><i class="bi bi-cash-stack"></i> TUNAI</button>
+                    <button onclick="switchPayTab('qris')" id="tab-btn-qris" class="w-full text-left px-4 py-3 rounded-xl font-bold bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 flex items-center gap-3 transition-all"><i class="bi bi-qr-code"></i> QRIS</button>
+                </div>
             </div>
-            <div class="md:w-2/3 p-6 sm:p-8 flex flex-col justify-center">
+            <div class="md:w-2/3 p-8 flex flex-col justify-center">
                 <div id="tab-tunai" class="pay-tab w-full text-center">
-                    <div class="bg-indigo-50 inline-block p-4 rounded-full mb-4"><i class="bi bi-cash-coin text-4xl sm:text-5xl text-indigo-600"></i></div>
-                    <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Rp <span class="pay-nominal">0</span></h2>
+                    <div class="bg-indigo-50 inline-block p-4 rounded-full mb-4"><i class="bi bi-cash-coin text-5xl text-indigo-600"></i></div>
+                    <h2 class="text-4xl font-bold text-gray-900 mb-2">Rp <span class="pay-nominal">0</span></h2>
                     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-6 text-left text-sm text-yellow-700 rounded-r"><i class="bi bi-info-circle-fill mr-1"></i> Silakan lanjut ke <b>Meja Kasir</b>.</div>
-                    <button onclick="processCheckout('TUNAI')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-95">Lanjut ke Kasir <i class="bi bi-arrow-right ml-2"></i></button>
+                    <button onclick="processCheckout('TUNAI')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition">Lanjut ke Kasir <i class="bi bi-arrow-right ml-2"></i></button>
                 </div>
                 <div id="tab-qris" class="pay-tab hidden w-full text-center">
-                    <div class="border-2 border-dashed border-gray-300 p-4 rounded-xl inline-block mb-4"><img src="{{ url_for('static', filename='qris.jpg') }}" width="120" class="opacity-80 mx-auto"></div>
+                    <div class="border-2 border-dashed border-gray-300 p-4 rounded-xl inline-block mb-4"><img src="{{ url_for('static', filename='qris.jpg') }}" width="140" class="opacity-80 mx-auto"></div>
                     <h3 class="text-2xl font-bold text-gray-900 mb-1">Rp <span class="pay-nominal">0</span></h3>
                     <p class="text-gray-400 text-xs mb-6">Scan QRIS</p>
-                    <button onclick="processCheckout('QRIS')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-95">Saya Sudah Bayar</button>
+                    <button onclick="processCheckout('QRIS')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg transition">Saya Sudah Bayar</button>
                 </div>
             </div>
         </div>
@@ -178,21 +167,48 @@
     let cartItems = [];
     let totalHarga = 0;
     
-    // VARIABEL SCANNER
-    let videoStream = null;
-    const videoEl = document.getElementById('video');
-    const canvasEl = document.getElementById('canvas');
+    // --- AMBIL LINK NGROK DARI PYTHON ---
+    // (Jika python berhasil mendeteksi, scanUrl akan berisi link. Jika tidak, kosong)
+    const scanUrl = "{{ scan_url }}"; 
 
-    // --- LOGIC CART ---
+    // --- LOGIC QR CODE CONNECT ---
+    function openConnectModal() {
+        document.getElementById('connectModal').classList.remove('hidden');
+        document.getElementById('qrcode').innerHTML = ""; // Bersihkan QR Lama
+        
+        if (scanUrl && scanUrl !== "None") {
+            // Generate QR Code
+            new QRCode(document.getElementById("qrcode"), {
+                text: scanUrl,
+                width: 200,
+                height: 200,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+            document.getElementById('ngrok-status').innerText = scanUrl;
+            document.getElementById('ngrok-status').className = "text-xs font-mono bg-green-100 text-green-700 p-2 rounded break-all";
+        } else {
+            document.getElementById('qrcode').innerHTML = "<i class='bi bi-exclamation-triangle text-5xl text-yellow-500'></i>";
+            document.getElementById('ngrok-status').innerText = "Ngrok tidak terdeteksi! Jalankan ngrok terlebih dahulu.";
+            document.getElementById('ngrok-status').className = "text-xs font-mono bg-red-100 text-red-700 p-2 rounded break-all";
+        }
+    }
+
+    function closeConnectModal() {
+        document.getElementById('connectModal').classList.add('hidden');
+    }
+
+    // --- SOCKET IO ---
     socket.on('new_order', function(data) {
         cartItems.push(data.product);
         totalHarga += data.price;
         document.getElementById('empty-msg').style.display = 'none';
         
         const row = `<tr class="new-item group hover:bg-indigo-50/50 transition-colors">
-            <td class="px-4 sm:px-6 py-3 text-sm text-gray-500">${cartItems.length}</td>
-            <td class="px-4 sm:px-6 py-3 text-sm font-bold text-gray-900">${data.product}</td>
-            <td class="px-4 sm:px-6 py-3 text-sm font-bold text-gray-900 text-right">Rp ${data.price.toLocaleString('id-ID')}</td>
+            <td class="px-6 py-4 text-sm text-gray-500">${cartItems.length}</td>
+            <td class="px-6 py-4 text-sm font-bold text-gray-900">${data.product}</td>
+            <td class="px-6 py-4 text-sm font-bold text-gray-900 text-right">Rp ${data.price.toLocaleString('id-ID')}</td>
         </tr>`;
         document.getElementById('cart-body').insertAdjacentHTML('beforeend', row);
         
@@ -202,115 +218,22 @@
         window.speechSynthesis.speak(msg);
     });
 
-    // --- LOGIC SCANNER (UNIFIED) ---
-    function openScanner() {
-        document.getElementById('scannerModal').classList.remove('hidden');
-        
-        // Coba Akses Kamera Belakang (Environment)
-        navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                facingMode: "environment", // Prioritas Kamera Belakang HP
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            } 
-        })
-        .then(stream => { 
-            videoStream = stream; 
-            videoEl.srcObject = stream; 
-        })
-        .catch(err => {
-            console.warn("Back camera fail, trying default...", err);
-            // Fallback ke Kamera Default (Webcam Laptop)
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => { 
-                    videoStream = stream; 
-                    videoEl.srcObject = stream; 
-                })
-                .catch(e => Swal.fire('Error', 'Kamera tidak ditemukan!', 'error'));
-        });
-    }
-
-    function closeScanner() {
-        document.getElementById('scannerModal').classList.add('hidden');
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
-        }
-    }
-
-    function manualCapture() {
-        if (!videoEl.videoWidth) return;
-        
-        // Efek Freeze
-        videoEl.pause();
-        
-        // Loading
-        Swal.fire({
-            title: 'Menganalisa...',
-            width: 200,
-            didOpen: () => Swal.showLoading(),
-            background: 'rgba(0,0,0,0.7)', color: 'white',
-            showConfirmButton: false, allowOutsideClick: false
-        });
-
-        const ctx = canvasEl.getContext('2d');
-        const size = 300; 
-        canvasEl.width = size; canvasEl.height = size;
-        
-        // Crop Tengah
-        const min = Math.min(videoEl.videoWidth, videoEl.videoHeight);
-        ctx.drawImage(videoEl, (videoEl.videoWidth-min)/2, (videoEl.videoHeight-min)/2, min, min, 0, 0, size, size);
-        
-        canvasEl.toBlob(blob => {
-            const fd = new FormData(); fd.append('image', blob, 'scan.jpg');
-            fetch('/predict', { method: 'POST', body: fd })
-            .then(res => res.json())
-            .then(data => {
-                Swal.close();
-                videoEl.play(); // Unfreeze
-                
-                if(data.status === 'success') {
-                    // Berhasil Deteksi
-                    const Toast = Swal.mixin({
-                        toast: true, position: 'top', showConfirmButton: false, timer: 1500,
-                        background: '#10b981', color: 'white'
-                    });
-                    Toast.fire({ icon: 'success', title: data.product });
-                    
-                    // Kirim data ke diri sendiri (simulate socket) karena kita di page yang sama
-                    // Tapi di backend kita sudah pakai socket.emit('new_order'), jadi data akan masuk otomatis via socket.on di atas.
-                    // Jadi tidak perlu addToCart manual di sini.
-                } else {
-                    const Toast = Swal.mixin({
-                        toast: true, position: 'center', showConfirmButton: false, timer: 1000,
-                        background: '#ef4444', color: 'white'
-                    });
-                    Toast.fire({ icon: 'error', title: 'Gagal Kenali Produk' });
-                }
-            })
-            .catch(err => {
-                Swal.close();
-                videoEl.play();
-                Swal.fire('Error', 'Gagal koneksi server', 'error');
-            });
-        }, 'image/jpeg', 0.7);
-    }
-
-    // --- FUNGSI LAIN ---
+    // --- FUNGSI LAIN (Sama seperti sebelumnya) ---
     function updateGrandTotal() { 
         let fmt = totalHarga.toLocaleString('id-ID'); 
         document.getElementById('grand-total').innerText = fmt; 
         document.querySelectorAll('.pay-nominal').forEach(el => el.innerText = fmt); 
     }
     function openPaymentModal() { 
-        if(totalHarga === 0) return Swal.fire("Keranjang Kosong", "Scan barang dulu!", "warning");
+        if(totalHarga === 0) return Swal.fire("Keranjang Kosong", "Tunggu scan dari HP pelanggan!", "warning");
         document.getElementById('payModal').classList.remove('hidden'); 
     }
     function closePayModal() { document.getElementById('payModal').classList.add('hidden'); }
     function switchPayTab(tab) {
         document.querySelectorAll('.pay-tab').forEach(el => el.classList.add('hidden')); 
         document.getElementById('tab-' + tab).classList.remove('hidden');
-        const active = "flex-1 md:flex-none w-full text-left px-4 py-3 rounded-xl font-bold bg-indigo-600 text-white shadow-md flex items-center justify-center md:justify-start gap-2 transition-all text-sm sm:text-base";
-        const inactive = "flex-1 md:flex-none w-full text-left px-4 py-3 rounded-xl font-bold bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 flex items-center justify-center md:justify-start gap-2 transition-all text-sm sm:text-base";
+        const active = "w-full text-left px-4 py-3 rounded-xl font-bold bg-indigo-600 text-white shadow-md flex items-center gap-3 transition-all";
+        const inactive = "w-full text-left px-4 py-3 rounded-xl font-bold bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 flex items-center gap-3 transition-all";
         if(tab==='tunai'){ document.getElementById('tab-btn-tunai').className = active; document.getElementById('tab-btn-qris').className = inactive; } 
         else { document.getElementById('tab-btn-qris').className = active; document.getElementById('tab-btn-tunai').className = inactive; }
     }

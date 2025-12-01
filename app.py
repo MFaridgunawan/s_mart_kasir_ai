@@ -1,3 +1,5 @@
+import requests
+import json
 import datetime
 import os
 import io
@@ -97,6 +99,20 @@ try:
 except:
     print("❌ Warning: Model AI tidak ditemukan.")
 
+# FUNGSI UNTUK MENDETEKSI LINK NGROK OTOMATIS
+def get_ngrok_url():
+    try:
+        url = "http://127.0.0.1:4040/api/tunnels"
+        res = requests.get(url)
+        res_unicode = res.content.decode("utf-8")
+        res_json = json.loads(res_unicode)
+        for tunnel in res_json['tunnels']:
+            if tunnel['proto'] == 'https':
+                return tunnel['public_url']
+    except:
+        return None
+    return None
+
 # ==========================================
 # 3. ROUTES (HALAMAN)
 # ==========================================
@@ -126,11 +142,16 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# --- HALAMAN USER (KASIR MANDIRI) ---
+# --- HALAMAN USER (KASIR MANDIRI) --
 @app.route('/')
 @login_required
 def cashier_dashboard():
-    return render_template('kasir_laptop.html', user=current_user)
+    # Cari Link Ngrok saat halaman dibuka
+    ngrok_url = get_ngrok_url()
+    scan_url = f"{ngrok_url}/scan" if ngrok_url else None
+    
+    # Kirim variabel scan_url ke HTML
+    return render_template('kasir_laptop.html', user=current_user, scan_url=scan_url)
 
 # --- HALAMAN ADMIN (ANTRIAN PEMBAYARAN) ---
 @app.route('/admin')
