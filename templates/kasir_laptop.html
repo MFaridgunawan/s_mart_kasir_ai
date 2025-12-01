@@ -37,15 +37,9 @@
             </div>
             
             <div class="flex gap-3">
-                {% if user.role == 'admin' %}
-                    <a href="/history" class="bg-white/10 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition text-sm flex items-center gap-2">
-                        <i class="bi bi-arrow-left"></i> Panel Admin
-                    </a>
-                {% else %}
-                    <span class="bg-indigo-500/50 border border-indigo-400 text-indigo-100 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
-                        <i class="bi bi-person-badge"></i> KASIR: {{ user.username.upper() }}
-                    </span>
-                {% endif %}
+                <span class="bg-indigo-500/50 border border-indigo-400 text-indigo-100 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 cursor-default">
+                    <i class="bi bi-person-badge"></i> KASIR: {{ user.username.upper() }}
+                </span>
             </div>
         </div>
     </div>
