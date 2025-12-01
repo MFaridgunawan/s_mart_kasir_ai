@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Kasir - SMART AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen w-full flex items-center justify-center p-4">
+
+    <div class="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-5xl w-full flex flex-col md:flex-row h-[600px]">
+        
+        <div class="md:w-1/2 bg-indigo-600 text-white p-12 flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-64 h-64 bg-white opacity-10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+            <div class="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500 opacity-20 rounded-full translate-x-1/3 translate-y-1/3"></div>
+            
+            <div class="relative z-10">
+                <div class="flex items-center gap-3 text-2xl font-bold mb-6">
+                    <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                    S-Mart
+                </div>
+                <h1 class="text-4xl font-bold leading-tight mb-4">
+                    Sistem Kasir Pintar <br>Berbasis AI
+                </h1>
+                <p class="text-indigo-100 text-lg opacity-90">
+                    Kelola stok, transaksi, dan deteksi objek otomatis dalam satu dashboard terintegrasi.
+                </p>
+            </div>
+
+            <div class="relative z-10 text-sm text-indigo-200 flex items-center gap-2">
+                <i class="bi bi-shield-check"></i> Secured System v2.0
+            </div>
+        </div>
+
+        <div class="md:w-1/2 p-10 md:p-16 flex flex-col justify-center bg-white">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Selamat Datang</h2>
+                <p class="text-gray-500">Silakan masukkan akun admin Anda.</p>
+            </div>
+
+            {% if error %}
+            <div class="bg-red-50 border-l-4 border-red-500 text-red-600 p-4 rounded mb-6 text-sm flex items-center gap-3 animate-pulse">
+                <i class="bi bi-exclamation-triangle-fill text-lg"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/login" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="bi bi-person text-gray-400 text-lg"></i>
+                        </div>
+                        <input type="text" name="username" required 
+                            class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block w-full transition-colors outline-none" 
+                            placeholder="admin">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="bi bi-lock text-gray-400 text-lg"></i>
+                        </div>
+                        <input type="password" name="password" required 
+                            class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block w-full transition-colors outline-none" 
+                            placeholder="••••••">
+                    </div>
+                </div>
+
+                <button type="submit" 
+                    class="w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-lg shadow-indigo-200 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform active:scale-95">
+                    MASUK DASHBOARD <i class="bi bi-arrow-right ml-2"></i>
+                </button>
+            </form>
+
+            <div class="mt-8 text-center">
+                <p class="text-xs text-gray-400">
+                    Lupa password? Hubungi tim IT.
+                </p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

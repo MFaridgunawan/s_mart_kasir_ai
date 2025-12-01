@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <title>Manajemen Inventaris - S-Mart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+
+<nav class="bg-indigo-600 shadow-lg mb-8 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                    <i class="bi bi-shield-lock-fill text-white text-xl"></i>
+                </div>
+                <span class="text-white text-xl font-bold tracking-tight">ADMIN CONSOLE</span>
+            </div>
+            
+            <div class="flex gap-3">
+                <a href="/admin" class="bg-indigo-700/50 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 text-sm border border-indigo-500/30">
+                    <i class="bi bi-speedometer2"></i> Antrian
+                </a>
+
+                <a href="/history" class="bg-indigo-700/50 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 text-sm border border-indigo-500/30">
+                    <i class="bi bi-journal-text"></i> Laporan
+                </a>
+
+                <a href="/logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold transition flex items-center gap-2 text-sm shadow-sm border border-red-400 ml-2">
+                    <i class="bi bi-box-arrow-right"></i> Keluar
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-12 fade-in">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-2 mb-2">
+            <i class="bi bi-box-seam text-indigo-600"></i> Inventaris Gudang
+        </h1>
+        <p class="text-gray-600">Kelola stok barang & harga jual secara real-time</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-900 text-white">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">ID AI</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Nama Produk</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Harga Jual</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Sisa Stok</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for p in products %}
+                    <tr class="hover:bg-indigo-50/30 transition duration-150 group">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200">
+                                Class {{ p.ai_index }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-bold text-gray-900">{{ p.name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg overflow-hidden w-40 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
+                                <span class="bg-gray-100 px-3 py-2 text-gray-500 font-bold text-xs border-r border-gray-200">Rp</span>
+                                <input type="number" id="price-{{p.id}}" value="{{ p.price }}" class="w-full px-3 py-2 bg-transparent outline-none text-sm font-semibold text-gray-700">
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center bg-gray-50 border border-gray-200 rounded-lg overflow-hidden w-32 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
+                                <input type="number" id="stock-{{p.id}}" value="{{ p.stock }}" class="w-full px-3 py-2 bg-transparent outline-none text-sm font-bold {% if p.stock < 10 %}text-red-600{% else %}text-emerald-600{% endif %}">
+                                <span class="bg-gray-100 px-2 py-2 text-gray-500 font-bold text-xs border-l border-gray-200">Pcs</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <button onclick="updateProd('{{p.id}}', '{{p.name}}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition transform active:scale-95 flex items-center gap-2 mx-auto">
+                                <i class="bi bi-check-lg"></i> Simpan
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateProd(id, name) {
+        const stock = document.getElementById('stock-' + id).value;
+        const price = document.getElementById('price-' + id).value;
+
+        // Validasi sederhana
+        if(stock < 0 || price < 0) {
+            Swal.fire('Error', 'Nilai tidak boleh negatif!', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('id', id);
+        formData.append('stock', stock);
+        formData.append('price', price);
+
+        fetch('/update_stock', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                const Toast = Swal.mixin({
+                    toast: true, position: 'top-end', showConfirmButton: false, timer: 2000,
+                    timerProgressBar: true, didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer)
+                        toast.addEventListener('mouseleave', Swal.resumeTimer)
+                    }
+                });
+                Toast.fire({ icon: 'success', title: `Data ${name} berhasil disimpan` });
+                
+                // Update warna text stok secara real-time tanpa reload
+                const stockInput = document.getElementById('stock-' + id);
+                if(parseInt(stock) < 10) {
+                    stockInput.classList.remove('text-emerald-600');
+                    stockInput.classList.add('text-red-600');
+                } else {
+                    stockInput.classList.remove('text-red-600');
+                    stockInput.classList.add('text-emerald-600');
+                }
+            } else {
+                Swal.fire('Gagal', 'Terjadi kesalahan saat menyimpan.', 'error');
+            }
+        });
+    }
+</script>
+</body>
+</html>

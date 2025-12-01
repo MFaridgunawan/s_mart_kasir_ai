@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <title>Admin Console - S-Mart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        /* CSS KHUSUS PRINT STRUK */
+        @media print {
+            body * { visibility: hidden; }
+            #receipt-area, #receipt-area * { visibility: visible !important; display: block !important; }
+            #receipt-area { position: fixed; left: 0; top: 0; width: 100%; z-index: 9999; background: white; }
+            @page { size: auto; margin: 0; }
+        }
+        #receipt-area { display: none; width: 80mm; padding: 10px; font-family: 'Courier New', monospace; text-transform: uppercase; font-size: 12px; }
+        .rec-row { display: flex; justify-content: space-between; } 
+        .rec-divider { border-bottom: 1px dashed #000; margin: 8px 0; }
+        
+        /* Animasi Masuk */
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+
+<nav class="bg-indigo-600 shadow-lg mb-8 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm shadow-inner">
+                    <i class="bi bi-shield-lock-fill text-white text-xl"></i>
+                </div>
+                <div class="leading-tight">
+                    <span class="block text-white text-lg font-bold tracking-wide">ADMIN CONSOLE</span>
+                    <span class="block text-indigo-200 text-xs font-medium">Monitoring Pembayaran</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <a href="/inventory" class="group bg-indigo-700/50 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 border border-indigo-500/30">
+                    <i class="bi bi-box-seam group-hover:scale-110 transition-transform"></i> 
+                    <span>Stok Gudang</span>
+                </a>
+                
+                <a href="/history" class="group bg-indigo-700/50 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 border border-indigo-500/30">
+                    <i class="bi bi-journal-text group-hover:scale-110 transition-transform"></i> 
+                    <span>Laporan</span>
+                </a>
+
+                <div class="h-8 w-px bg-indigo-400/50 mx-1"></div>
+
+                <a href="/logout" class="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg font-bold transition flex items-center gap-2 shadow-lg shadow-red-900/20 hover:shadow-red-500/40">
+                    <i class="bi bi-box-arrow-right"></i> Keluar
+                </a>
+            </div>
+
+        </div>
+    </div>
+</nav>
+
+<div class="max-w-6xl mx-auto px-4 pb-12">
+    <div class="flex justify-between items-end mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                <i class="bi bi-inbox-fill text-indigo-600"></i> Antrian Pembayaran
+            </h1>
+            <p class="text-gray-500 mt-1">Konfirmasi pembayaran Tunai/Debit dari Kiosk Pelanggan</p>
+        </div>
+        <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
+            <span class="relative flex h-3 w-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <span class="text-xs font-bold text-gray-600 tracking-wide">LIVE MONITOR</span>
+        </div>
+    </div>
+
+    <div id="queue-container" class="space-y-4">
+        
+        {% if not pending_trans %}
+        <div id="empty-queue" class="flex flex-col items-center justify-center py-24 bg-white rounded-3xl shadow-sm border-2 border-dashed border-gray-200">
+            <div class="bg-gray-50 p-6 rounded-full mb-4">
+                <i class="bi bi-cup-hot text-gray-300 text-6xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-400">Antrian Kosong</h3>
+            <p class="text-sm text-gray-400">Belum ada pesanan masuk dari pelanggan.</p>
+        </div>
+        {% endif %}
+
+        {% for t in pending_trans %}
+        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 flex flex-col md:flex-row justify-between items-center fade-in hover:shadow-lg transition-shadow relative overflow-hidden" id="card-{{t.id}}">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
+            
+            <div class="mb-4 md:mb-0 pl-4 w-full">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="bg-gray-900 text-white px-3 py-1 rounded-lg text-xs font-bold tracking-wider">ORDER #{{ t.id }}</span>
+                    <span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                        <i class="bi bi-clock"></i> {{ t.timestamp.strftime('%H:%M') }}
+                    </span>
+                    <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-bold uppercase border border-orange-200">
+                        {{ t.payment_method }}
+                    </span>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 leading-snug" id="items-{{t.id}}">{{ t.items_str }}</h3>
+            </div>
+            
+            <div class="flex items-center gap-6 min-w-max border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 mt-4 md:mt-0 w-full md:w-auto justify-between md:justify-end">
+                <div class="text-right">
+                    <p class="text-xs text-gray-400 uppercase font-bold tracking-wider">Total Tagihan</p>
+                    <p class="text-3xl font-bold text-indigo-600">Rp {{ "{:,}".format(t.total_price).replace(',', '.') }}</p>
+                </div>
+                <button onclick="openAdminPay('{{t.id}}', '{{t.total_price}}', '{{t.payment_method}}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-4 rounded-xl font-bold shadow-lg shadow-emerald-200 transition transform hover:-translate-y-1 active:translate-y-0 flex items-center gap-2">
+                    <i class="bi bi-cash-coin text-xl"></i> 
+                    <span>PROSES</span>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+
+<div id="adminPayModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden transform scale-100 transition-transform">
+        <div class="bg-gray-900 text-white p-6 flex justify-between items-center">
+            <div>
+                <h3 class="text-xl font-bold">Terima Pembayaran</h3>
+                <p class="text-gray-400 text-xs mt-1">Konfirmasi dan hitung kembalian</p>
+            </div>
+            <button onclick="closeAdminModal()" class="text-gray-400 hover:text-white text-2xl bg-gray-800 w-8 h-8 rounded-full flex items-center justify-center transition">&times;</button>
+        </div>
+
+        <div class="p-8">
+            <input type="hidden" id="admin-trx-id">
+            <input type="hidden" id="admin-trx-method">
+            
+            <div class="flex justify-between items-center mb-6 bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
+                <span class="text-indigo-900 font-bold text-sm uppercase">Total Tagihan</span>
+                <span class="text-3xl font-bold text-indigo-700">Rp <span id="admin-display-total">0</span></span>
+            </div>
+
+            <div id="admin-cash-input-area">
+                <label class="block text-sm font-bold text-gray-700 mb-2">Uang Diterima</label>
+                <div class="relative mb-4">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">Rp</span>
+                    <input type="number" id="admin-cash-in" placeholder="0" oninput="calcAdminChange()" class="w-full pl-10 pr-4 py-4 border-2 border-gray-200 rounded-xl text-2xl font-bold text-gray-900 focus:border-indigo-500 focus:ring-0 outline-none transition text-right">
+                </div>
+
+                <div class="grid grid-cols-4 gap-2 mb-6">
+                    <button onclick="setAdminCash('PAS')" class="px-2 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-bold text-sm hover:bg-indigo-200 transition">Uang Pas</button>
+                    <button onclick="setAdminCash(20000)" class="px-2 py-2 bg-gray-100 text-gray-600 rounded-lg font-medium text-sm hover:bg-gray-200 transition">20rb</button>
+                    <button onclick="setAdminCash(50000)" class="px-2 py-2 bg-gray-100 text-gray-600 rounded-lg font-medium text-sm hover:bg-gray-200 transition">50rb</button>
+                    <button onclick="setAdminCash(100000)" class="px-2 py-2 bg-gray-100 text-gray-600 rounded-lg font-medium text-sm hover:bg-gray-200 transition">100rb</button>
+                </div>
+                
+                <div class="flex justify-between items-end border-t border-gray-100 pt-4 mb-6">
+                    <span class="text-gray-500 font-medium mb-1">Kembalian</span>
+                    <h3 class="text-3xl font-bold text-gray-300" id="admin-change-display">Rp 0</h3>
+                </div>
+            </div>
+
+            <button onclick="submitAdminPay()" id="btn-admin-submit" disabled class="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg transition flex justify-center items-center gap-2">
+                <i class="bi bi-printer-fill"></i> LUNAS & CETAK STRUK
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="receipt-area">
+    <div style="text-align:center;">
+        <h3 style="margin:0; font-weight:bold;">S-Mart</h3>
+        <div>Jl. Telekomunikasi No. 1</div>
+        <div>Bandung - Jawa Barat</div>
+    </div>
+    <div class="rec-divider"></div>
+    <div class="rec-row"><span>NO: <span id="rec-id">#</span></span><span id="rec-date">--/--</span></div>
+    <div class="rec-divider"></div>
+    <div id="rec-items"></div>
+    <div class="rec-divider"></div>
+    <div class="rec-row rec-bold"><span>TOTAL</span><span>Rp <span id="rec-total">0</span></span></div>
+    <div class="rec-row"><span>TUNAI</span><span>Rp <span id="rec-cash">0</span></span></div>
+    <div class="rec-row"><span>KEMBALI</span><span>Rp <span id="rec-change">0</span></span></div>
+    <div class="rec-divider"></div>
+    <div style="text-align:center;">* LUNAS *<br>TERIMA KASIH</div>
+</div>
+
+<script>
+    var socket = io();
+    let currentTotal = 0;
+
+    socket.on('incoming_payment', function(data) {
+        document.getElementById('empty-queue')?.remove();
+        const cardHTML = `
+        <div class="bg-white rounded-2xl shadow-md border border-gray-100 p-6 flex flex-col md:flex-row justify-between items-center fade-in relative overflow-hidden" id="card-${data.id}">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
+            <div class="mb-4 md:mb-0 pl-4 w-full">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="bg-gray-900 text-white px-3 py-1 rounded-lg text-xs font-bold tracking-wider">ORDER #${data.id}</span>
+                    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-bold">BARU MASUK</span>
+                    <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-bold uppercase border border-orange-200">${data.method}</span>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 leading-snug" id="items-${data.id}">${data.items}</h3>
+            </div>
+            <div class="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
+                <div class="text-right">
+                    <p class="text-xs text-gray-400 uppercase font-bold tracking-wider">Total Tagihan</p>
+                    <p class="text-3xl font-bold text-indigo-600">Rp ${parseInt(data.total).toLocaleString('id-ID')}</p>
+                </div>
+                <button onclick="openAdminPay('${data.id}', '${data.total}', '${data.method}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-4 rounded-xl font-bold shadow-lg shadow-emerald-200 transition transform hover:-translate-y-1 flex items-center gap-2">
+                    <i class="bi bi-cash-coin text-xl"></i> <span>PROSES</span>
+                </button>
+            </div>
+        </div>`;
+        document.getElementById('queue-container').insertAdjacentHTML('afterbegin', cardHTML);
+        new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play();
+    });
+
+    function openAdminPay(id, total, method) {
+        currentTotal = parseInt(total);
+        document.getElementById('admin-trx-id').value = id;
+        document.getElementById('admin-trx-method').value = method;
+        document.getElementById('admin-display-total').innerText = currentTotal.toLocaleString('id-ID');
+        document.getElementById('admin-cash-in').value = '';
+        document.getElementById('admin-change-display').innerText = 'Rp 0';
+        document.getElementById('btn-admin-submit').disabled = true;
+        document.getElementById('adminPayModal').classList.remove('hidden');
+        if (method === 'QRIS') {
+            document.getElementById('admin-cash-in').value = currentTotal;
+            document.getElementById('admin-cash-in').disabled = true;
+            calcAdminChange();
+        } else {
+            document.getElementById('admin-cash-in').disabled = false;
+            setTimeout(() => document.getElementById('admin-cash-in').focus(), 100);
+        }
+    }
+
+    function closeAdminModal() { document.getElementById('adminPayModal').classList.add('hidden'); }
+    function setAdminCash(amount) {
+        if(amount === 'PAS') document.getElementById('admin-cash-in').value = currentTotal;
+        else document.getElementById('admin-cash-in').value = amount;
+        calcAdminChange();
+    }
+    function calcAdminChange() {
+        let cash = parseFloat(document.getElementById('admin-cash-in').value) || 0;
+        let change = cash - currentTotal;
+        let btn = document.getElementById('btn-admin-submit');
+        if (cash >= currentTotal) {
+            document.getElementById('admin-change-display').innerText = "Rp " + change.toLocaleString('id-ID');
+            document.getElementById('admin-change-display').className = "text-3xl font-bold text-emerald-600";
+            btn.disabled = false;
+        } else {
+            document.getElementById('admin-change-display').innerText = "Kurang";
+            document.getElementById('admin-change-display').className = "text-3xl font-bold text-red-500";
+            btn.disabled = true;
+        }
+    }
+    function submitAdminPay() {
+        let id = document.getElementById('admin-trx-id').value;
+        let cash = parseFloat(document.getElementById('admin-cash-in').value);
+        let change = cash - currentTotal;
+        let itemsStr = document.getElementById('items-' + id).innerText;
+        fetch('/confirm_payment', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id: id, cash_in: cash, change: change })
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'success') {
+                closeAdminModal();
+                document.getElementById('rec-id').innerText = "#" + id;
+                document.getElementById('rec-date').innerText = new Date().toLocaleString('id-ID');
+                document.getElementById('rec-total').innerText = currentTotal.toLocaleString('id-ID');
+                document.getElementById('rec-cash').innerText = cash.toLocaleString('id-ID');
+                document.getElementById('rec-change').innerText = change.toLocaleString('id-ID');
+                let itemsHTML = ""; itemsStr.split(', ').forEach(item => { itemsHTML += `<div class="rec-row"><span>${item}</span><span>OK</span></div>`; });
+                document.getElementById('rec-items').innerHTML = itemsHTML;
+                document.getElementById('card-' + id).remove();
+                Swal.fire({ icon: 'success', title: 'Lunas', text: 'Mencetak struk...', timer: 1000, showConfirmButton: false }).then(() => { setTimeout(() => window.print(), 500); });
+            }
+        });
+    }
+</script>
+</body>
+</html>
