@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <title>AI Vision Scanner</title>
+    <title>S-Mart Vision Scanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -29,14 +29,11 @@
             animation: spin 1s linear infinite;
         }
 
-        /* Efek Tombol Ditekan */
         .shutter-btn:active { transform: scale(0.95); }
         .shutter-inner { transition: all 0.3s; }
         
-        /* Custom SweetAlert Style */
         div:where(.swal2-container) div:where(.swal2-popup) {
-            padding: 0 !important; /* Hapus padding bawaan biar rapi */
-            overflow: hidden;
+            padding: 0 !important; overflow: hidden;
         }
     </style>
 </head>
@@ -53,12 +50,18 @@
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                   <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
                 </span>
-                S-Mart VISION 
+                S-Mart VISION SCANNER
             </div>
             
-            <button onclick="window.location.reload()" class="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/20 backdrop-blur-md active:bg-white/20 transition">
-                <i class="bi bi-arrow-clockwise text-lg"></i>
-            </button>
+            <div class="flex gap-3">
+                <button onclick="window.location.reload()" class="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/20 backdrop-blur-md active:bg-white/20 transition hover:bg-white/20" title="Refresh Kamera">
+                    <i class="bi bi-arrow-clockwise text-lg"></i>
+                </button>
+
+                <button onclick="closeScannerPage()" class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center border border-red-500/30 backdrop-blur-md active:bg-red-500/40 transition hover:bg-red-500/30" title="Tutup Scanner">
+                    <i class="bi bi-x-lg text-lg"></i>
+                </button>
+            </div>
         </div>
 
         <div class="flex-1 flex flex-col items-center justify-center relative">
@@ -67,10 +70,13 @@
                 <div class="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-indigo-500 rounded-tr-2xl"></div>
                 <div class="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-emerald-400 rounded-bl-2xl"></div>
                 <div class="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-emerald-400 rounded-br-2xl"></div>
-                
                 <div class="laser-beam"></div>
+                <div id="scan-feedback" class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm opacity-0 transition-opacity duration-300">
+                    <div class="bg-emerald-500/20 p-4 rounded-full border border-emerald-500/50 shadow-[0_0_30px_#10b981]">
+                        <i class="bi bi-check-lg text-5xl text-emerald-400"></i>
+                    </div>
+                </div>
             </div>
-            
             <p class="mt-8 text-white/80 font-medium text-sm bg-black/40 px-5 py-2 rounded-full backdrop-blur-sm border border-white/10 shadow-lg">
                 Arahkan ke produk & Tekan tombol
             </p>
@@ -79,9 +85,7 @@
         <div class="pb-16 pt-10 flex justify-center items-center bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-auto">
             <button id="shutterBtn" onclick="manualCapture()" class="shutter-btn w-20 h-20 rounded-full border-[3px] border-white/80 p-1 flex items-center justify-center shadow-2xl shadow-indigo-500/30 transition-all bg-white/5 backdrop-blur-sm">
                 <div id="shutterInner" class="shutter-inner w-16 h-16 bg-white rounded-full shadow-inner relative overflow-hidden"></div>
-                <div id="loadingSpinner" class="absolute w-20 h-20 p-1 hidden">
-                    <div class="loading-ring"></div>
-                </div>
+                <div id="loadingSpinner" class="absolute w-20 h-20 p-1 hidden"><div class="loading-ring"></div></div>
             </button>
         </div>
     </div>
@@ -92,28 +96,31 @@
     const shutterBtn = document.getElementById('shutterBtn');
     const shutterInner = document.getElementById('shutterInner');
     const loadingSpinner = document.getElementById('loadingSpinner');
-    
+    const scanFeedback = document.getElementById('scan-feedback');
     let isProcessing = false; 
 
+    // --- FUNGSI CLOSE ---
+    function closeScannerPage() {
+        // Coba tutup tab dulu (jika dibuka via target="_blank")
+        // Jika tidak bisa (karena security browser), redirect ke Home
+        try {
+            window.close();
+        } catch(e) {}
+        
+        // Fallback: Kembali ke Dashboard
+        window.location.href = "/";
+    }
+
     // Setup Kamera
-    const constraints = { 
-        video: { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } 
-    };
-    
+    const constraints = { video: { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } };
     navigator.mediaDevices.getUserMedia(constraints)
         .then(stream => { video.srcObject = stream; })
-        .catch(err => {
-            navigator.mediaDevices.getUserMedia({ video: true }).then(stream => { video.srcObject = stream; });
-        });
+        .catch(err => { navigator.mediaDevices.getUserMedia({ video: true }).then(stream => { video.srcObject = stream; }); });
 
     function manualCapture() {
-        if (isProcessing) return; 
-        if (!video.videoWidth) return;
-
+        if (isProcessing) return; if (!video.videoWidth) return;
         isProcessing = true;
-        shutterBtn.disabled = true; 
-        shutterInner.classList.add('scale-75', 'bg-indigo-500'); 
-        loadingSpinner.classList.remove('hidden'); 
+        shutterBtn.disabled = true; shutterInner.classList.add('scale-75', 'bg-indigo-500'); loadingSpinner.classList.remove('hidden'); 
 
         const context = canvas.getContext('2d');
         const size = 300; canvas.width = size; canvas.height = size;
@@ -121,67 +128,29 @@
         context.drawImage(video, (video.videoWidth-min)/2, (video.videoHeight-min)/2, min, min, 0, 0, size, size);
 
         canvas.toBlob(blob => {
-            const formData = new FormData();
-            formData.append('image', blob, 'scan.jpg');
-
-            fetch('/predict', { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
+            const formData = new FormData(); formData.append('image', blob, 'scan.jpg');
+            fetch('/predict', { method: 'POST', body: formData }).then(res => res.json()).then(data => {
                 if (data.status === 'success') {
+                    scanFeedback.classList.remove('opacity-0'); setTimeout(() => scanFeedback.classList.add('opacity-0'), 1500);
                     showDarkPopup(data.product, data.price);
                 } else {
                     if(navigator.vibrate) navigator.vibrate(200);
-                    Swal.fire({
-                        icon: 'error', 
-                        title: 'Tidak Dikenali',
-                        toast: true, position: 'top', showConfirmButton: false, timer: 1500,
-                        background: '#ef4444', color: 'white',
-                        customClass: { popup: 'rounded-full px-6 mt-16 shadow-lg' }
-                    });
+                    const Toast = Swal.mixin({ toast: true, position: 'top', showConfirmButton: false, timer: 1500, background: '#ef4444', color: 'white', customClass: { popup: 'rounded-full px-6 mt-16 shadow-lg' } });
+                    Toast.fire({ icon: 'error', title: 'Tidak Dikenali' });
                 }
-            })
-            .catch(err => {
-                Swal.fire({icon: 'error', title: 'Error Koneksi', toast: true, position: 'top', timer: 2000});
-            })
+            }).catch(err => { Swal.fire({icon: 'error', title: 'Error Koneksi', toast: true, position: 'top', timer: 2000}); })
             .finally(() => {
-                setTimeout(() => {
-                    isProcessing = false;
-                    shutterBtn.disabled = false;
-                    shutterInner.classList.remove('scale-75', 'bg-indigo-500');
-                    loadingSpinner.classList.add('hidden');
-                }, 1000); 
+                setTimeout(() => { isProcessing = false; shutterBtn.disabled = false; shutterInner.classList.remove('scale-75', 'bg-indigo-500'); loadingSpinner.classList.add('hidden'); }, 1000); 
             });
-
         }, 'image/jpeg', 0.7);
     }
 
     function showDarkPopup(product, price) {
         Swal.fire({
-            // HAPUS icon: 'success' BAWAAN AGAR TIDAK DOUBLE
-            html: `
-                <div class="flex flex-col items-center justify-center pt-4 pb-2">
-                    <div class="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mb-4 shadow-[0_0_20px_#10b981]">
-                        <i class="bi bi-check-lg text-3xl text-emerald-400"></i>
-                    </div>
-                    
-                    <h2 class="text-white text-2xl font-bold tracking-wide mb-1">${product}</h2>
-                    
-                    <p class="text-emerald-400 text-xl font-mono font-bold">Rp ${price.toLocaleString('id-ID')}</p>
-                    
-                    <p class="text-gray-400 text-xs mt-3">Berhasil masuk keranjang</p>
-                </div>
-            `,
-            background: 'rgba(20, 20, 25, 0.95)', // Gelap pekat transparan
-            timer: 2000,
-            showConfirmButton: false,
-            backdrop: `rgba(0,0,0,0.6)`,
-            width: '85%', // Rasio lebar agar pas di HP
-            customClass: { 
-                popup: 'rounded-3xl border border-indigo-500/30 shadow-[0_0_50px_rgba(139,92,246,0.2)]' 
-            }
+            html: `<div class="flex flex-col items-center justify-center pt-4 pb-2"><div class="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mb-4 shadow-[0_0_20px_#10b981]"><i class="bi bi-check-lg text-3xl text-emerald-400"></i></div><h2 class="text-white text-2xl font-bold tracking-wide mb-1">${product}</h2><p class="text-emerald-400 text-xl font-mono font-bold">Rp ${price.toLocaleString('id-ID')}</p><p class="text-gray-400 text-xs mt-3">Berhasil masuk keranjang</p></div>`,
+            background: 'rgba(20, 20, 25, 0.95)', timer: 2000, showConfirmButton: false, backdrop: `rgba(0,0,0,0.6)`, width: '85%', customClass: { popup: 'rounded-3xl border border-indigo-500/30 shadow-[0_0_50px_rgba(139,92,246,0.2)]' }
         });
     }
 </script>
-
 </body>
 </html>
